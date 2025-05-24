@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Incident Report - CarPlay Compatible</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <style>
+        /* CarPlay-optimized styles */
+        .btn-xl {
+            padding: 1rem 2rem;
+            font-size: 1.25rem;
+            min-height: 60px;
+        }
+        
+        .form-select {
+            font-size: 1.1rem;
+            min-height: 50px;
+        }
+        
+        .form-control {
+            font-size: 1.1rem;
+            min-height: 50px;
+        }
+        
+        .container {
+            max-width: 800px;
+        }
+        
+        .quick-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .incident-btn {
+            height: 100px;
+            font-size: 1.1rem;
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .smart-btn small {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+        
+        @media (max-width: 768px) {
+            .quick-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-4">
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h1 class="h2 mb-3">
+                <i data-feather="zap" class="me-2"></i>
+                Quick Incident Report
+            </h1>
+            <p class="text-muted">Fast reporting for drivers</p>
+        </div>
+
+        <!-- One-Tap Smart Buttons -->
+        <div class="quick-buttons mb-4">
+            <button class="btn btn-danger incident-btn smart-btn" data-type="accident">
+                <i data-feather="alert-triangle" class="me-2"></i>
+                <div>Accident</div>
+                <small>Auto-detect location & lanes</small>
+            </button>
+            <button class="btn btn-warning incident-btn smart-btn" data-type="speed_trap">
+                <i data-feather="eye" class="me-2"></i>
+                <div>Speed Trap</div>
+                <small>Auto-detect location</small>
+            </button>
+            <button class="btn btn-info incident-btn smart-btn" data-type="construction">
+                <i data-feather="tool" class="me-2"></i>
+                <div>Construction</div>
+                <small>Auto-detect location & lanes</small>
+            </button>
+            <button class="btn btn-secondary incident-btn smart-btn" data-type="stalled_vehicle">
+                <i data-feather="truck" class="me-2"></i>
+                <div>Stalled Vehicle</div>
+                <small>Auto-detect location</small>
+            </button>
+            <button class="btn btn-dark incident-btn smart-btn" data-type="debris">
+                <i data-feather="package" class="me-2"></i>
+                <div>Debris</div>
+                <small>Auto-detect location</small>
+            </button>
+            <button class="btn btn-primary incident-btn smart-btn" data-type="road_closure">
+                <i data-feather="x-circle" class="me-2"></i>
+                <div>Road Closed</div>
+                <small>Auto-detect location</small>
+            </button>
+        </div>
+
+        <!-- Location Status -->
+        <div class="card mb-4" id="locationCard" style="display: none;">
+            <div class="card-body text-center">
+                <div id="locationStatus" class="mb-2">
+                    <i data-feather="map-pin" class="me-2"></i>
+                    <span id="locationText">Getting your location...</span>
+                </div>
+                <div id="locationDetails" class="text-muted small"></div>
+            </div>
+        </div>
+
+        <!-- Manual Mode Toggle -->
+        <div class="text-center mb-4">
+            <button class="btn btn-outline-secondary" id="toggleManualMode">
+                <i data-feather="settings" class="me-2"></i>
+                Need Manual Entry? Click Here
+            </button>
+        </div>
+
+        <!-- Detailed Form (Hidden by default) -->
+        <div class="card" id="manualForm" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="edit-3" class="me-2"></i>
+                    Manual Incident Entry
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="quickReportForm">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="incidentType" class="form-label">Incident Type</label>
+                            <select class="form-select" id="incidentType" required>
+                                <option value="">Select incident type</option>
+                                <option value="accident">Accident</option>
+                                <option value="speed_trap">Speed Trap</option>
+                                <option value="road_closure">Road Closure</option>
+                                <option value="construction">Construction</option>
+                                <option value="weather_hazard">Weather Hazard</option>
+                                <option value="debris">Debris</option>
+                                <option value="stalled_vehicle">Stalled Vehicle</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="severity" class="form-label">Severity</label>
+                            <select class="form-select" id="severity" required>
+                                <option value="">Select severity</option>
+                                <option value="low">Low - Minor impact</option>
+                                <option value="medium">Medium - Some delays</option>
+                                <option value="high">High - Major delays</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="location" 
+                               placeholder="Highway, street, or intersection" required>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="direction" class="form-label">Direction (Optional)</label>
+                            <select class="form-select" id="direction">
+                                <option value="">Select direction</option>
+                                <option value="northbound">Northbound</option>
+                                <option value="southbound">Southbound</option>
+                                <option value="eastbound">Eastbound</option>
+                                <option value="westbound">Westbound</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="lanesAffected" class="form-label">Lanes Affected (Optional)</label>
+                            <select class="form-select" id="lanesAffected">
+                                <option value="">Select lanes</option>
+                                <option value="1">1 Lane</option>
+                                <option value="2">2 Lanes</option>
+                                <option value="3">3 Lanes</option>
+                                <option value="4">4+ Lanes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="estimatedDelay" class="form-label">Estimated Delay (Optional)</label>
+                            <select class="form-select" id="estimatedDelay">
+                                <option value="">Select delay</option>
+                                <option value="5">5 minutes</option>
+                                <option value="10">10 minutes</option>
+                                <option value="15">15 minutes</option>
+                                <option value="30">30 minutes</option>
+                                <option value="60">1+ hour</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="timeMentioned" class="form-label">Time (Optional)</label>
+                            <input type="text" class="form-control" id="timeMentioned" 
+                                   placeholder="e.g., 'just now', '5 minutes ago'">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="description" class="form-label">Additional Details (Optional)</label>
+                        <textarea class="form-control" id="description" rows="2" 
+                                  placeholder="Any additional information..."></textarea>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-xl" id="submitBtn">
+                            <i data-feather="send" class="me-2"></i>
+                            Submit Manual Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="text-center my-4" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Submitting report...</span>
+            </div>
+            <p class="mt-2 text-muted">Processing incident report...</p>
+        </div>
+
+        <!-- Success Message -->
+        <div id="successAlert" class="alert alert-success mt-4" style="display: none;">
+            <i data-feather="check-circle" class="me-2"></i>
+            <strong>Report submitted successfully!</strong>
+            <div id="successDetails" class="mt-2"></div>
+        </div>
+
+        <!-- Error Alert -->
+        <div id="errorAlert" class="alert alert-danger mt-4" style="display: none;">
+            <i data-feather="alert-circle" class="me-2"></i>
+            <span id="errorMessage"></span>
+        </div>
+
+        <!-- Switch to Text Mode -->
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-outline-secondary">
+                <i data-feather="type" class="me-2"></i>
+                Switch to Text Input Mode
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Feather icons
+        feather.replace();
+
+        let currentLocation = null;
+        let currentRoadInfo = null;
+
+        // Smart button handlers for one-tap reporting
+        document.querySelectorAll('.smart-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const incidentType = this.dataset.type;
+                
+                // Disable button and show loading
+                this.disabled = true;
+                this.innerHTML = `
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    <div>Processing...</div>
+                `;
+                
+                // Start smart reporting process
+                performSmartReport(incidentType, this);
+            });
+        });
+
+        // Manual mode toggle
+        document.getElementById('toggleManualMode').addEventListener('click', function() {
+            const manualForm = document.getElementById('manualForm');
+            if (manualForm.style.display === 'none') {
+                manualForm.style.display = 'block';
+                this.innerHTML = '<i data-feather="x" class="me-2"></i>Hide Manual Entry';
+                this.className = 'btn btn-outline-danger';
+            } else {
+                manualForm.style.display = 'none';
+                this.innerHTML = '<i data-feather="settings" class="me-2"></i>Need Manual Entry? Click Here';
+                this.className = 'btn btn-outline-secondary';
+            }
+            feather.replace();
+        });
+
+        async function performSmartReport(incidentType, button) {
+            try {
+                showLocationCard('Getting your location...');
+                
+                // Get user's current location
+                const position = await getCurrentPosition();
+                const coordinates = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                
+                showLocationCard('Converting location to address...');
+                
+                // Convert coordinates to address
+                const locationData = await geocodeLocation(coordinates);
+                currentLocation = locationData;
+                
+                showLocationCard(`Location: ${locationData.address}`, locationData.road_info);
+                
+                // Create and auto-submit smart incident report
+                showLocationCard('Creating and submitting report...');
+                const reportData = await createSmartReport(incidentType, coordinates, locationData.road_info);
+                
+                // Show success immediately - bypass any complex functions
+                showLocationCard(`✅ ${incidentType.toUpperCase()} REPORTED at ${locationData.address}`, null);
+                hideError();
+                
+                // Clear buttons and show success
+                setTimeout(() => {
+                    alert(`SUCCESS: ${incidentType.toUpperCase()} reported at ${locationData.address}`);
+                }, 500);
+                
+            } catch (error) {
+                console.error('Smart report error:', error);
+                showError(`Smart reporting failed: ${error.message}. Please use manual form below.`);
+                
+                // Fallback to manual form
+                document.getElementById('incidentType').value = incidentType;
+                document.getElementById('location').focus();
+            } finally {
+                // Re-enable button
+                resetButton(button, incidentType);
+            }
+        }
+
+        function getCurrentPosition() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation is not supported by this browser'));
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(
+                    resolve,
+                    (error) => {
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                reject(new Error('Location access denied. Please enable location services.'));
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                reject(new Error('Location information unavailable.'));
+                                break;
+                            case error.TIMEOUT:
+                                reject(new Error('Location request timed out.'));
+                                break;
+                            default:
+                                reject(new Error('An unknown error occurred while getting location.'));
+                                break;
+                        }
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 300000 // 5 minutes
+                    }
+                );
+            });
+        }
+
+        async function geocodeLocation(coordinates) {
+            const response = await fetch('/geocode', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(coordinates)
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to get location information');
+            }
+            
+            return data;
+        }
+
+        async function createSmartReport(incidentType, coordinates, roadInfo) {
+            const response = await fetch('/smart-report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    incident_type: incidentType,
+                    coordinates: coordinates,
+                    road_info: roadInfo,
+                    address: currentLocation ? currentLocation.address : null
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to create smart report');
+            }
+            
+            return data;
+        }
+
+        function showLocationCard(message, roadInfo = null) {
+            document.getElementById('locationText').textContent = message;
+            
+            if (roadInfo) {
+                const details = [
+                    `Road Type: ${roadInfo.road_type || 'unknown'}`,
+                    `Highway: ${roadInfo.is_highway ? 'Yes' : 'No'}`,
+                    `Estimated Lanes: ${roadInfo.typical_lanes || 'unknown'}`
+                ].join(' • ');
+                document.getElementById('locationDetails').textContent = details;
+            } else {
+                document.getElementById('locationDetails').textContent = '';
+            }
+            
+            document.getElementById('locationCard').style.display = 'block';
+            feather.replace();
+        }
+
+        function resetButton(button, incidentType) {
+            const buttonConfig = {
+                accident: { text: 'Accident', icon: 'alert-triangle', class: 'btn-danger' },
+                speed_trap: { text: 'Speed Trap', icon: 'eye', class: 'btn-warning' },
+                construction: { text: 'Construction', icon: 'tool', class: 'btn-info' },
+                stalled_vehicle: { text: 'Stalled Vehicle', icon: 'truck', class: 'btn-secondary' },
+                debris: { text: 'Debris', icon: 'package', class: 'btn-dark' },
+                road_closure: { text: 'Road Closed', icon: 'x-circle', class: 'btn-primary' }
+            };
+            
+            const config = buttonConfig[incidentType];
+            if (config) {
+                button.innerHTML = `
+                    <i data-feather="${config.icon}" class="me-2"></i>
+                    <div>${config.text}</div>
+                    <small>Auto-detect location ${incidentType === 'accident' || incidentType === 'construction' ? '& lanes' : ''}</small>
+                `;
+                button.disabled = false;
+                feather.replace();
+            }
+        }
+
+        function showSmartReportSuccess(report) {
+            hideError();
+            hideSuccess();
+            
+            // Show simple success message
+            showSuccess(`${report.incident_type.toUpperCase()} reported at ${report.location}`);
+            
+            // Hide location card
+            setTimeout(() => {
+                document.getElementById('locationCard').style.display = 'none';
+            }, 2000);
+        }
+
+        // Form submission handler
+        document.getElementById('quickReportForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                incident_type: document.getElementById('incidentType').value,
+                location: document.getElementById('location').value.trim(),
+                severity: document.getElementById('severity').value,
+                direction: document.getElementById('direction').value || null,
+                lanes_affected: document.getElementById('lanesAffected').value ? parseInt(document.getElementById('lanesAffected').value) : null,
+                estimated_delay: document.getElementById('estimatedDelay').value ? parseInt(document.getElementById('estimatedDelay').value) : null,
+                time_mentioned: document.getElementById('timeMentioned').value.trim() || null,
+                description: document.getElementById('description').value.trim() || null
+            };
+            
+            // Validation
+            if (!formData.incident_type || !formData.location || !formData.severity) {
+                showError('Please fill in all required fields (Type, Location, Severity)');
+                return;
+            }
+            
+            showLoading(true);
+            hideError();
+            hideSuccess();
+            
+            try {
+                const response = await fetch('/report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to submit report');
+                }
+                
+                if (data.success) {
+                    showSuccess(data.incident_report);
+                    document.getElementById('quickReportForm').reset();
+                } else {
+                    throw new Error(data.error || 'Unknown error occurred');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        function showLoading(show) {
+            document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+            document.getElementById('submitBtn').disabled = show;
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorAlert').style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorAlert').style.display = 'none';
+        }
+
+        function showSuccess(report) {
+            const details = `
+                <strong>Type:</strong> ${report.incident_type}<br>
+                <strong>Location:</strong> ${report.location}<br>
+                <strong>Severity:</strong> ${report.severity}<br>
+                <strong>Processing Method:</strong> ${report.processing_method}
+            `;
+            document.getElementById('successDetails').innerHTML = details;
+            document.getElementById('successAlert').style.display = 'block';
+            
+            // Scroll to success message
+            document.getElementById('successAlert').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideSuccess() {
+            document.getElementById('successAlert').style.display = 'none';
+        }
+
+        function getSeverityColor(severity) {
+            return 'success'; // Simple fallback - we don't need severity colors
+        }
+
+        function getTypeColor(type) {
+            return 'primary'; // Simple fallback - we don't need type colors
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Traffic Incident Reporter</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Feather Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body>
+    <div class="container my-5">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 mb-3">
+                <i data-feather="alert-triangle" class="me-3"></i>
+                AI Traffic Incident Reporter
+            </h1>
+            <p class="lead text-muted">
+                Convert natural language descriptions into structured incident reports using AI
+            </p>
+        </div>
+
+        <!-- Main Form -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i data-feather="edit-3" class="me-2"></i>
+                            Report an Incident
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="incidentForm">
+                            <div class="mb-4">
+                                <label for="incidentMessage" class="form-label">
+                                    Describe the traffic incident in your own words:
+                                </label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="incidentMessage" 
+                                    rows="4" 
+                                    placeholder="Example: I saw a car accident on I-25 northbound near the University exit. Two lanes are blocked and traffic is backing up..."
+                                    required
+                                ></textarea>
+                                <div class="form-text">
+                                    Be as specific as possible about location, severity, and any other details.
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                    <i data-feather="send" class="me-2"></i>
+                                    Generate Report
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="loadingSpinner" class="text-center my-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Processing incident report...</span>
+                    </div>
+                    <p class="mt-2 text-muted">AI is analyzing your incident description...</p>
+                </div>
+
+                <!-- Error Alert -->
+                <div id="errorAlert" class="alert alert-danger mt-4" style="display: none;">
+                    <i data-feather="alert-circle" class="me-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+
+                <!-- Results -->
+                <div id="resultsContainer" class="mt-4" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i data-feather="file-text" class="me-2"></i>
+                                Generated Incident Report
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <strong>Incident Type:</strong>
+                                        <span id="incidentType" class="badge ms-2"></span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Location:</strong>
+                                        <div id="incidentLocation" class="mt-1"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Severity:</strong>
+                                        <span id="incidentSeverity" class="badge ms-2"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3" id="directionContainer" style="display: none;">
+                                        <strong>Direction:</strong>
+                                        <div id="incidentDirection" class="mt-1"></div>
+                                    </div>
+                                    <div class="mb-3" id="lanesContainer" style="display: none;">
+                                        <strong>Lanes Affected:</strong>
+                                        <div id="incidentLanes" class="mt-1"></div>
+                                    </div>
+                                    <div class="mb-3" id="delayContainer" style="display: none;">
+                                        <strong>Estimated Delay:</strong>
+                                        <div id="incidentDelay" class="mt-1"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Description:</strong>
+                                <div id="incidentDescription" class="mt-1"></div>
+                            </div>
+
+                            <div class="mb-3" id="timeContainer" style="display: none;">
+                                <strong>Time Mentioned:</strong>
+                                <div id="incidentTime" class="mt-1"></div>
+                            </div>
+
+                            <!-- JSON Output -->
+                            <div class="mt-4">
+                                <strong>Raw JSON Output:</strong>
+                                <pre id="jsonOutput" class="bg-dark text-light p-3 rounded mt-2"></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Example Inputs -->
+        <div class="row justify-content-center mt-5">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i data-feather="help-circle" class="me-2"></i>
+                            Example Inputs to Try
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="example-input mb-2" role="button">
+                                    "I saw a crash near Wadsworth and 80th"
+                                </div>
+                                <div class="example-input mb-2" role="button">
+                                    "Speed trap on I-70 eastbound near Denver"
+                                </div>
+                                <div class="example-input mb-2" role="button">
+                                    "Construction blocking two lanes on Highway 36"
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="example-input mb-2" role="button">
+                                    "Stalled vehicle in the right lane on I-25 southbound"
+                                </div>
+                                <div class="example-input mb-2" role="button">
+                                    "Road closure due to flooding on Main Street"
+                                </div>
+                                <div class="example-input mb-2" role="button">
+                                    "Debris in the road near Exit 210, causing major delays"
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode Switcher -->
+        <div class="row justify-content-center mt-5">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">
+                            <i data-feather="smartphone" class="me-2"></i>
+                            CarPlay Compatible Mode
+                        </h6>
+                        <p class="card-text text-muted mb-3">
+                            Use the quick report interface with dropdown menus - perfect for drivers
+                        </p>
+                        <a href="/quick" class="btn btn-success">
+                            <i data-feather="zap" class="me-2"></i>
+                            Switch to Quick Report Mode
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script>
+        // Initialize Feather icons
+        feather.replace();
+
+        // Form submission handler
+        document.getElementById('incidentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const messageInput = document.getElementById('incidentMessage');
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                showError('Please enter an incident description');
+                return;
+            }
+            
+            showLoading(true);
+            hideError();
+            hideResults();
+            
+            try {
+                const response = await fetch('/report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to process incident');
+                }
+                
+                if (data.success) {
+                    displayResults(data.incident_report);
+                } else {
+                    throw new Error(data.error || 'Unknown error occurred');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Example input handlers
+        document.querySelectorAll('.example-input').forEach(element => {
+            element.addEventListener('click', function() {
+                document.getElementById('incidentMessage').value = this.textContent.replace(/["""]/g, '');
+            });
+        });
+
+        function showLoading(show) {
+            document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+            document.getElementById('submitBtn').disabled = show;
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorAlert').style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorAlert').style.display = 'none';
+        }
+
+        function hideResults() {
+            document.getElementById('resultsContainer').style.display = 'none';
+        }
+
+        function displayResults(report) {
+            // Set basic info
+            document.getElementById('incidentType').textContent = report.incident_type;
+            document.getElementById('incidentType').className = `badge ms-2 bg-${getTypeColor(report.incident_type)}`;
+            
+            document.getElementById('incidentLocation').textContent = report.location;
+            
+            document.getElementById('incidentSeverity').textContent = report.severity;
+            document.getElementById('incidentSeverity').className = `badge ms-2 bg-${getSeverityColor(report.severity)}`;
+            
+            document.getElementById('incidentDescription').textContent = report.description;
+
+            // Set optional fields
+            setOptionalField('directionContainer', 'incidentDirection', report.direction);
+            setOptionalField('lanesContainer', 'incidentLanes', report.lanes_affected);
+            setOptionalField('delayContainer', 'incidentDelay', 
+                report.estimated_delay ? `${report.estimated_delay} minutes` : null);
+            setOptionalField('timeContainer', 'incidentTime', report.time_mentioned);
+
+            // Display JSON
+            document.getElementById('jsonOutput').textContent = JSON.stringify(report, null, 2);
+
+            // Show results
+            document.getElementById('resultsContainer').style.display = 'block';
+
+            // Scroll to results
+            document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function setOptionalField(containerId, fieldId, value) {
+            const container = document.getElementById(containerId);
+            const field = document.getElementById(fieldId);
+            
+            if (value !== null && value !== undefined && value !== '') {
+                field.textContent = value;
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        function getTypeColor(type) {
+            const colors = {
+                'accident': 'danger',
+                'speed_trap': 'warning',
+                'road_closure': 'info',
+                'construction': 'secondary',
+                'weather_hazard': 'primary',
+                'debris': 'dark',
+                'stalled_vehicle': 'light',
+                'other': 'secondary'
+            };
+            return colors[type] || 'secondary';
+        }
+
+        function getSeverityColor(severity) {
+            const colors = {
+                'low': 'success',
+                'medium': 'warning',
+                'high': 'danger'
+            };
+            return colors[severity] || 'secondary';
+        }
+    </script>
+</body>
+</html>
